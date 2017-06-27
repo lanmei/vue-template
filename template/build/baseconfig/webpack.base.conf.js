@@ -4,7 +4,9 @@ var HappyPack = require('happypack');
 var postcss = require('postcss');
 var utils = require('./utils')
 var config = require('./config')
-var SpritesmithPlugin = require('webpack-spritesmith');
+var SpritesmithPlugin = require('webpack-spritesmith')
+var scssTemplate = require('../sprites/scss.js')
+var cssTemplate = require('../sprites/css.js')
 // vue load config
 var vueLoaderConfig = utils.vueLoaderConfig
 var isProduction =  process.env.NODE_ENV === 'production'
@@ -59,7 +61,7 @@ var webpackConfig = {
                 test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
                 loader: 'url-loader',
                 query: {
-                    limit: 10000,
+                    limit: 1,
                     name: utils.assetsPath('img/[name].[hash:7].[ext]')
                 }
             },
@@ -96,8 +98,21 @@ var webpackConfig = {
     ].concat(utils.getHtmlPlugins()) //webpackhtmlplugin setting
 }
 // 配置sprite插件
+
 var SpritesmithPluginConfig = (function(){
+    var spriteType = {unit:spriteConfig.unit,scale:spriteConfig.scale}
     if(spriteConfig){
+        var cssPath = []
+        if(spriteConfig.target.css){
+            cssPath.push([path.resolve(__dirname,'../../'+spriteConfig.target.css),{
+                format: 'css_template'
+            }])
+        }
+        if(spriteConfig.target.scss){
+            cssPath.push([path.resolve(__dirname,'../../'+spriteConfig.target.scss),{
+                format: 'scss_template'
+            }])
+        }
         return new SpritesmithPlugin({
             src: {
                 cwd: path.resolve(__dirname,'../../'+ spriteConfig.src.path ),
@@ -105,14 +120,19 @@ var SpritesmithPluginConfig = (function(){
             },
             target: {
                 image: path.resolve(__dirname,'../../'+ spriteConfig.target.image ),
-                css:  path.resolve(__dirname,'../../'+ spriteConfig.target.css )
+                css: cssPath
             },
+            // retina:'@2x',
             apiOptions: {
                 cssImageRef: spriteConfig.cssImageRef
             },
             spritesmithOptions: {
                 algorithm: 'top-down',
                 padding: spriteConfig.padding || 10
+            },
+            customTemplates: {
+              'css_template': cssTemplate(spriteType),
+              'scss_template': scssTemplate(spriteType)
             }
         })
     }
